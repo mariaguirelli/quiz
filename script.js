@@ -10,22 +10,26 @@ let timerLeft = 20;
 const startBtn = document.getElementById("start-btn");
 const nextBtn = document.getElementById("next-btn");
 
+// Função para embaralhar as opções
 function shuffleArray(arr) {
     return arr.sort(() => Math.random() - 0.5);
 }
 
+// Função para decodificar entidades HTML
 function decodeHTMLEntities(text) {
     const txt = document.createElement("textarea");
     txt.innerHTML = text;
     return txt.value;
 }
 
+// Função para buscar o token da Tryvia API
 async function fetchToken() {
     const res = await fetch('https://tryvia.ptr.red/api_token.php?command=request');
     const data = await res.json();
     return data.token;
 }
 
+// Inicia o quiz ao clicar no botão "Iniciar Quiz"
 startBtn.addEventListener("click", async () => {
     const nomeInput = document.getElementById("nome").value.trim();
     if (!nomeInput) {
@@ -54,6 +58,7 @@ startBtn.addEventListener("click", async () => {
 
         currentQuestionIndex = 0;
         score = 0;
+        nextBtn.style.display = "inline-block"; // garantir que botão apareça no início
         showQuestion(questions[currentQuestionIndex]);
     } catch (error) {
         console.error("Erro na Tryvia API:", error);
@@ -64,7 +69,14 @@ startBtn.addEventListener("click", async () => {
 function showQuestion(question) {
     clearInterval(timer);
     timerLeft = 20;
-    document.getElementById('next-btn').disabled = true;
+    nextBtn.disabled = true;
+
+    // Verifica se é a última pergunta e esconde o botão
+    if (currentQuestionIndex === questions.length - 1) {
+        nextBtn.style.display = "none";
+    } else {
+        nextBtn.style.display = "inline-block";
+    }
 
     const container = document.getElementById("question-container");
     container.classList.remove("fade-in");
@@ -90,6 +102,7 @@ function showQuestion(question) {
 
     startTimer();
 }
+
 
 function selectOption(buttonElement) {
     clearInterval(timer);
@@ -122,22 +135,16 @@ function selectOption(buttonElement) {
     .then(res => res.text())
     .then(msg => console.log("Servidor:", msg));
 
+    nextBtn.disabled = false;
     document.getElementById('score').textContent = `Pontuação: ${score}`;
 
-    // Avança automaticamente para a próxima pergunta após 1 segundo
+    // Avança automaticamente após 1 segundo
     setTimeout(() => {
-        currentQuestionIndex++;
-
-        if (currentQuestionIndex < questions.length) {
-            showQuestion(questions[currentQuestionIndex]);
-        } else {
-            document.getElementById("quiz-screen").style.display = "none";
-            alert(`Quiz completo! Sua pontuação foi: ${score}/${questions.length}`);
-        }
+        nextQuestion();
     }, 1000);
 }
 
-nextBtn.addEventListener("click", () => {
+function nextQuestion() {
     clearInterval(timer);
     document.querySelectorAll('.option-btn').forEach(btn => {
         btn.classList.remove("correct", "incorrect");
@@ -148,10 +155,34 @@ nextBtn.addEventListener("click", () => {
     if (currentQuestionIndex < questions.length) {
         showQuestion(questions[currentQuestionIndex]);
     } else {
-        document.getElementById("quiz-screen").style.display = "none";
-        alert(`Quiz completo! Sua pontuação foi: ${score}/${questions.length}`);
+        showFinalScreen();
     }
+}
+
+nextBtn.addEventListener("click", () => {
+    nextQuestion();
 });
+
+function showFinalScreen() {
+    clearInterval(timer);
+    const container = document.getElementById("question-container");
+    container.innerHTML = `
+        <div id="final-screen">
+            <h2>Quiz completo!</h2>
+            <p>Sua pontuação foi: ${score} de ${questions.length}</p>
+            <button id="restart-btn">Reiniciar Quiz</button>
+        </div>
+    `;
+
+    nextBtn.style.display = "inline-block"; 
+
+    document.getElementById("restart-btn").addEventListener("click", () => {
+        currentQuestionIndex = 0;
+        score = 0;
+        nextBtn.style.display = "inline-block"; 
+        showQuestion(questions[currentQuestionIndex]);
+    });
+}
 
 function startTimer() {
     const timerElement = document.getElementById('timer');
@@ -163,7 +194,7 @@ function startTimer() {
             clearInterval(timer);
             alert("Tempo esgotado!");
             document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
-            document.getElementById('next-btn').disabled = false;
+            nextBtn.disabled = false;
         }
     }, 1000);
 }

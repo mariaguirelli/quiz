@@ -1,3 +1,4 @@
+/* Reset básico e layout centralizado */
 body {
     font-family: Arial, sans-serif;
     background-color: #f0f4f8;
@@ -9,6 +10,7 @@ body {
     padding: 0;
 }
 
+/* Container principal do quiz */
 .quiz-container {
     background-color: white;
     border-radius: 12px;
@@ -19,11 +21,12 @@ body {
     padding: 30px;
 }
 
+/* Container da pergunta */
 .question-container {
     margin-bottom: 20px;
 }
 
-/* Corrigido: estilização da label */
+/* Label do input nome */
 .nome-label {
     display: block;
     font-size: 18px;
@@ -32,7 +35,7 @@ body {
     text-align: center;
 }
 
-/* Campo de entrada corrigido */
+/* Input texto para nome */
 #nome {
     width: 90%;
     padding: 10px;
@@ -48,8 +51,8 @@ body {
     outline: none;
 }
 
-/* Botão de iniciar */
-#start-btn {
+/* Botões gerais, inclusive iniciar, pular e opções */
+button, .option-btn {
     padding: 12px 20px;
     font-size: 16px;
     background-color: #007BFF;
@@ -58,26 +61,27 @@ body {
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin: 8px 12px; /* margem para espaçar botões */
+    display: inline-block;
+    min-width: 120px; /* largura mínima para melhorar visual */
 }
 
-#start-btn:hover {
-    background-color: green;
-}
-
-/* Botões gerais (ex: próxima pergunta) */
-button {
-    padding: 12px 20px;
-    font-size: 16px;
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-button:hover {
+button:hover, .option-btn:hover {
     background-color: #121b79;
+}
+
+/* Botões desabilitados */
+button:disabled, .option-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    color: #666666;
+}
+
+/* Feedback visual para respostas corretas/incorretas */
+.option-btn.correct {
+    background-color: #28a745 !important; /* verde */
+}
+
+.option-btn.incorrect {
+    background-color: #dc3545 !important; /* vermelho */
 }
