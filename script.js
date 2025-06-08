@@ -1,33 +1,6 @@
-// Script atualizado com recursos avançados: pontuação, temporizador, feedback visual e animações com alertas
+// Script do quiz com perguntas da Tryvia API (em português), pular pergunta, pontuação e temporizador
 
-const questions = [
-    {
-        question: "Qual é a capital da França?",
-        options: ["Londres", "Berlim", "Paris", "Madri"],
-        answer: "Paris"
-    },
-    {
-        question: "Qual é o maior planeta do sistema solar?",
-        options: ["Terra", "Júpiter", "Saturno", "Marte"],
-        answer: "Júpiter"
-    },
-    {
-        question: "Se 10 pães são 8 reais, quantos reais são 3 pães?",
-        options: ["5", "10", "2,50", "2,40"],
-        answer: "2,40"
-    },
-    {
-        question: "Quando foi a queda do muro de berlim?",
-        options: ["1980", "1960", "1989", "2002"],
-        answer: "1989"
-    },
-    {
-        question: "Quem foi o primeiro homem a pisar na lua?",
-        options: ["Marcos Pontes", "Neil Armstrong", "Yuri Gagarin"],
-        answer: "Neil Armstrong"
-    }
-];
-
+let questions = [];
 let currentQuestionIndex = 0;
 let userName = "";
 let score = 0;
@@ -37,8 +10,23 @@ let timerLeft = 20;
 const startBtn = document.getElementById("start-btn");
 const nextBtn = document.getElementById("next-btn");
 
-// Inicia o quiz ao clicar no botão "Iniciar Quiz"
-startBtn.addEventListener("click", () => {
+function shuffleArray(arr) {
+    return arr.sort(() => Math.random() - 0.5);
+}
+
+function decodeHTMLEntities(text) {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = text;
+    return txt.value;
+}
+
+async function fetchToken() {
+    const res = await fetch('https://tryvia.ptr.red/api_token.php?command=request');
+    const data = await res.json();
+    return data.token;
+}
+
+startBtn.addEventListener("click", async () => {
     const nomeInput = document.getElementById("nome").value.trim();
     if (!nomeInput) {
         alert("Por favor, digite seu nome.");
@@ -48,10 +36,31 @@ startBtn.addEventListener("click", () => {
     userName = nomeInput;
     document.getElementById("start-screen").style.display = "none";
     document.getElementById("quiz-screen").style.display = "block";
-    showQuestion(questions[currentQuestionIndex]);
+
+    try {
+        const token = await fetchToken();
+        const res = await fetch(`https://tryvia.ptr.red/api.php?amount=5&type=multiple&token=${token}`);
+        const data = await res.json();
+
+        questions = data.results.map(q => {
+            const allOptions = [...q.incorrect_answers, q.correct_answer];
+            const shuffled = shuffleArray(allOptions);
+            return {
+                question: decodeHTMLEntities(q.question),
+                options: shuffled.map(opt => decodeHTMLEntities(opt)),
+                answer: decodeHTMLEntities(q.correct_answer)
+            };
+        });
+
+        currentQuestionIndex = 0;
+        score = 0;
+        showQuestion(questions[currentQuestionIndex]);
+    } catch (error) {
+        console.error("Erro na Tryvia API:", error);
+        alert("Erro ao carregar perguntas em português. Tente novamente.");
+    }
 });
 
-// Exibe a pergunta atual e inicia o temporizador
 function showQuestion(question) {
     clearInterval(timer);
     timerLeft = 20;
@@ -59,7 +68,7 @@ function showQuestion(question) {
 
     const container = document.getElementById("question-container");
     container.classList.remove("fade-in");
-    void container.offsetWidth; // Reinicia a animação
+    void container.offsetWidth;
     container.classList.add("fade-in");
 
     container.innerHTML = `
@@ -82,7 +91,6 @@ function showQuestion(question) {
     startTimer();
 }
 
-// Avalia a resposta selecionada e aplica feedback visual, envia ao backend e atualiza a pontuação
 function selectOption(buttonElement) {
     clearInterval(timer);
     const selectedOption = buttonElement.dataset.option;
@@ -97,7 +105,6 @@ function selectOption(buttonElement) {
         buttonElement.classList.add("incorrect");
         alert(`Resposta incorreta! A correta é: ${question.answer}`);
 
-        // Destaca a opção correta
         document.querySelectorAll('.option-btn').forEach(btn => {
             if (btn.dataset.option === question.answer) {
                 btn.classList.add("correct");
@@ -105,10 +112,8 @@ function selectOption(buttonElement) {
         });
     }
 
-    // Desabilita os botões após selecionar
     document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
 
-    // Envia para backend
     fetch("salvar.php", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -117,21 +122,37 @@ function selectOption(buttonElement) {
     .then(res => res.text())
     .then(msg => console.log("Servidor:", msg));
 
-    document.getElementById('next-btn').disabled = false;
     document.getElementById('score').textContent = `Pontuação: ${score}`;
+
+    // Avança automaticamente para a próxima pergunta após 1 segundo
+    setTimeout(() => {
+        currentQuestionIndex++;
+
+        if (currentQuestionIndex < questions.length) {
+            showQuestion(questions[currentQuestionIndex]);
+        } else {
+            document.getElementById("quiz-screen").style.display = "none";
+            alert(`Quiz completo! Sua pontuação foi: ${score}/${questions.length}`);
+        }
+    }, 1000);
 }
 
-// próxima pergunta ou finalizar o quiz
 nextBtn.addEventListener("click", () => {
+    clearInterval(timer);
+    document.querySelectorAll('.option-btn').forEach(btn => {
+        btn.classList.remove("correct", "incorrect");
+    });
+
     currentQuestionIndex++;
+
     if (currentQuestionIndex < questions.length) {
         showQuestion(questions[currentQuestionIndex]);
     } else {
+        document.getElementById("quiz-screen").style.display = "none";
         alert(`Quiz completo! Sua pontuação foi: ${score}/${questions.length}`);
     }
 });
 
-// temporizador regressivo
 function startTimer() {
     const timerElement = document.getElementById('timer');
     timer = setInterval(() => {
