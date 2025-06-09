@@ -179,7 +179,7 @@ function showFinalScreen() {
     document.getElementById("restart-btn").addEventListener("click", () => {
         currentQuestionIndex = 0;
         score = 0;
-        nextBtn.style.display = "inline-block"; 
+        nextBtn.style.display = "inline-block"; // Mostrar botão pular pergunta
         showQuestion(questions[currentQuestionIndex]);
     });
 }
